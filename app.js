@@ -4,10 +4,13 @@ var cors = require('cors');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-require('dotenv').config()
+
+// dotenv for .env files.
+require('dotenv').config();
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var testingRouter = require('./routes/testing');
 
 var app = express();
 // Enable cors.
@@ -25,6 +28,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/testing', testingRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
