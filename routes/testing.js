@@ -38,63 +38,149 @@ router.get('/dbtestinsert', function (req, res, next) {
         // Insert rows with hardcoded data.
         // Fields are not unique so this should be fine to run more than once.
         let stmt = db.prepare('INSERT INTO testing VALUES (?, ?)');
-        stmt.run(['Testing First Name', 'Testing Last Name']);
+        stmt.run(['Testing First Name', 'Testing Last Name'], function (err) {
+            if (err) {
+                console.log(TAG + 'Error: ');
+                console.log(err);
+                next(err);
+            } else {
+                res.send('Test row INSERT success. Try doing /dbtestselect.');
+            }
+        });
         stmt.finalize();
     });
 
 
     // Close
     db.close();
-    res.send("Pong. Try running /dbtestselect.");
 });
 
 /**
  * GET /dbtestselect. Selects the rows inserted by /dbtestinsert and returns them.
  * https://stackoverflow.com/questions/56602443/async-await-still-running-asynchronously
  */
-router.get('/dbtestselect', async function (req, res, next) {
+router.get('/dbtestselect', function (req, res, next) {
     const TAG = '\n/dbtestselect(), ';
-    console.log(TAG + 'Doing test select.');
+    console.log(TAG + 'Doing a simple test select.');
+    let db = dbConfig.openDatabase();
+
+    db.serialize(function () {
+        let arraySelectData = [];
+        db.each('SELECT rowid as id, first_name, last_name FROM testing', function (err, row) { // Function for each row.
+            if (err) {
+                console.log(TAG + 'Error: ');
+                console.log(err);
+                next(err);
+            } else {
+                console.log(`ID: ${row.id}, row data: ${row.first_name} ${row.last_name}`);
+                arraySelectData.push({ id: row.id, first_name: row.first_name, last_name: row.last_name });
+            }
+        }, (err, rowCount) => { // Function when completed.
+            if (err) {
+                console.log(TAG + 'Error: ');
+                console.log(err);
+                next(err);
+            } else {
+                res.send(arraySelectData);
+            }
+        })
+    });
+
+    db.close();
+});
+
+/**
+ * GET /dbtesterrorv1. Purposely causes an error before the seralize statement.
+ * Express middleware should catch and response with a 500 code.
+ */
+router.get('/dbtesterrorv1', function (req, res, next) {
+    const TAG = '\n/dbtesterrorv1(), ';
+    console.log(TAG + "Is going to cause an error outside the seralize.");
+
+    // Behold.
+    fooBarVar = foobarvar.length + 1;
+
+
     let db = dbConfig.openDatabase();
 
     db.serialize(function () {
         let arraySelectData = [];
         db.each('SELECT rowid as id, first_name, last_name FROM testing', function (err, row) { // Function for each row.
             console.log(`ID: ${row.id}, row data: ${row.first_name} ${row.last_name}`);
-            let rowDataAsString = `${row.id}: ${row.first_name} ${row.last_name}`;
-            arraySelectData.push(rowDataAsString);
+            arraySelectData.push({ id: row.id, first_name: row.first_name, last_name: row.last_name });
         }, (err, rowCount) => { // Function when fully completed (all rows found).
-            console.log('Reached complete statement. rowCount: ', rowCount);
+            console.log('\nReached complete statement. rowCount: ', rowCount);
             console.log('arraySelectData: ');
             console.log(arraySelectData);
+
+            res.send(arraySelectData);
         })
     });
 
-
-    // function selectRowsEach() {
-    //     return new Promise((resolve, reject) => {
-    //         // Select rows and add to the array.
-    //         db.serialize(function () {
-    //             let arraySelectData = []
-    //             db.each('SELECT rowid as id, first_name, last_name FROM testing', function (err, row) {
-    //                 // Reject if error.
-    //                 if (err) {
-    //                     reject(err);
-    //                 };
-    //                 console.log(`ID: ${row.id}, row data: ${row.first_name} ${row.last_name}`);
-    //                 let rowDataAsString = `${row.id}: ${row.first_name} ${row.last_name}`;
-    //                 arraySelectData.push(rowDataAsString);
-    //             });
-    //         });
-    //     })
-    // }
-
-
-    // Close.
     db.close();
-    res.send("Hello.");
-
 });
+
+/**
+ * GET /dbtesterrorv2. Causes an error inside the seralize block.
+ * Attempts to SELECT from a  table which does not exist.
+ * sqlite handles this in the completion block, not the function called for db.each.
+ */
+router.get('/dbtesterrorv2', function (req, res, next) {
+    const TAG = '\n/dbtesterrorv2(), ';
+    let db = dbConfig.openDatabase();
+
+    db.serialize(function () {
+        let arraySelectData = [];
+        // Attempt to use a bad statement.
+        // Assuming foobartesting does not exist.
+        db.each('SELECT rowid as id, first_name, last_name FROM foobartesting', function (err, row) { // Function for each row.
+            console.log(`ID: ${row.id}, row data: ${row.first_name} ${row.last_name}`);
+            arraySelectData.push({ id: row.id, first_name: row.first_name, last_name: row.last_name });
+        }, (err, rowCount) => { // Function when completed.
+            console.log('\nReached complete statement. rowCount: ', rowCount);
+            if (err) {
+                console.log(TAG + 'Error: ');
+                console.log(err);
+                next(err);
+            } else {
+                res.send(arraySelectData);
+            }
+        })
+    });
+
+    db.close();
+});
+
+/**
+ * GET /dbtesterrorinsert. Causes an error when trying an INSERT statement.
+ */
+router.get('/dbtesterrorinsert', function (req, res, next) {
+    const TAG = '\n/dbtesterrorinsert(), ';
+    console.log(TAG + 'Running.');
+
+    let db = dbConfig.openDatabase();
+
+    db.serialize(function () {
+        let stmt = db.prepare('INSERT INTO testing VALUES (?, ?)');
+        // Provide too many binding vars to see what happens.
+        stmt.run(['Testing First Name', 'Testing Last Name', 'Foo bar bazzle'], function (err) {
+            console.log('stmt run callback.');
+            if (err) {
+                console.log(TAG + 'Error: ');
+                console.log(err);
+                next(err);
+            } else {
+                res.send('Test row INSERT success. Try doing /dbtestselect.');
+            }
+        });
+        stmt.finalize();
+    });
+
+
+    // Close
+    db.close();
+});
+
 
 
 module.exports = router;
