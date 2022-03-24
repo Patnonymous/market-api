@@ -1,7 +1,8 @@
 var sqlite3 = require('sqlite3').verbose();
+var dbFileName = './configs/marketdb.db';
 
 function openDatabase() {
-    return new sqlite3.Database('./configs/marketdb');
+    return new sqlite3.Database(dbFileName);
 };
 
 function initializeDatabase() {
@@ -9,7 +10,7 @@ function initializeDatabase() {
     console.log(TAG + "Doing the work.");
 
     // New db var.
-    let db = new sqlite3.Database('./configs/marketdb');
+    let db = new sqlite3.Database(dbFileName);
 
     db.serialize(function () {
         // Create testing table.
