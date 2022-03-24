@@ -1,10 +1,12 @@
+//  Imports.
 var createError = require('http-errors');
 var express = require('express');
 var cors = require('cors');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
+// dbconfig for sqlite.
+var dbConfig = require('./configs/dbconfig');
 // dotenv for .env files.
 require('dotenv').config();
 
@@ -13,8 +15,12 @@ var usersRouter = require('./routes/users');
 var testingRouter = require('./routes/testing');
 
 var app = express();
+
 // Enable cors.
 app.use(cors());
+// Database work.
+dbConfig.initializeDatabase();
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
