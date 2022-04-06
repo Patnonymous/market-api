@@ -1,14 +1,14 @@
 # market-api
 Small marketplaces API.
 
+## Starting the server
 Run as dev:
 npm start
 Run as dev with nodemon:
 nodemon .\bin\www
 
 
-API Responses:
-
+#### API Responses
 Success Response (no data to return): Send 200.
 Example: res.sendstatus(200);
 Client recieves this as: 200 (OK)
