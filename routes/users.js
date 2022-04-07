@@ -48,6 +48,10 @@ router.get('/', function (req, res, next) {
 });
 
 
+/**
+ * @description POST users/
+ * Creates a new user. Salts and hashes password before inserting into db.
+ */
 router.post('/', function (req, res, next) {
   const TAG = '\nusers POST /(), ';
   console.log(TAG + 'Is registering a new user.');
@@ -55,8 +59,6 @@ router.post('/', function (req, res, next) {
   // Current timestamp date to sqlite friendly date.
   let currentDate = new Date();
   let sqliteDate = currentDate.toISOString();
-
-  console.log(req.body);
 
   // Salt and hash.
   let salt = crypto.randomBytes(16);
@@ -92,13 +94,9 @@ router.post('/', function (req, res, next) {
         res.sendStatus(200);
       }
 
-    })
-
+    });
 
   });
-
-
-  //res.send('Dummy res, we got the data. Pong!');
 });
 
 
