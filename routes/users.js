@@ -75,20 +75,23 @@ router.post('/', function (req, res, next) {
       sqliteDate
     ], function (err) {
       if (err) {
+        // Gracefully handle known errors,
+        // else any unknown errors get handled by middleware.
         console.log('Error when running db statement: ');
         console.log(err);
-        return next(err);
+
+
+        if (err.message === 'SQLITE_CONSTRAINT: UNIQUE constraint failed: users.username') {
+          res.status(409).send({ errorMessage: 'Username already exists. Username must be unique.' });
+        } else if (err.message = 'SQLITE_CONSTRAINT: UNIQUE constraint failed: users.email') {
+          res.status(409).send({ errorMessage: 'An account is already registered under that email.' });
+        } else {
+          return next(err);
+        }
+      } else {
+        res.sendStatus(200);
       }
 
-      console.log('Db entry created.')
-      console.log(this);
-      var user = {
-
-        id: this.lastID,
-        username: req.body.email
-      };
-      // All good, send 200.
-      res.sendStatus(200);
     })
 
 
